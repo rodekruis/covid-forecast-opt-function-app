@@ -133,4 +133,4 @@ local.settings.json
 service_account_key.json
 
 # Data
-data/*
+data/
