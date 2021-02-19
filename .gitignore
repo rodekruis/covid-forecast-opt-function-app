@@ -134,3 +134,4 @@ service_account_key.json
 
 # Data
 data/
+*.yml
