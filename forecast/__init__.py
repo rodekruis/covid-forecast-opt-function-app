@@ -138,15 +138,15 @@ def forecast():
 
     
     df_ps.iloc[:,2] = df_ps.iloc[:,2].astype(str).apply(lambda x: x.replace(',','')).astype(int) # 3th column contains new cases in the last 7 days, per district
-    df_gaza = pd.DataFrame(columns=df_ps.columns)
+    
 
     # Gaza breakdown
-    gaza_governorates = ['Jabalia', 'Gaza City', 'Der Albalah', 'Khan Younis', 'Rafah']
+    df_gaza = pd.DataFrame(columns=df_ps.columns)
+    df_gaza.iloc[:,0] = ['Jabalia', 'Gaza City', 'Der Albalah', 'Khan Younis', 'Rafah']
     gaza_cases = [9237, 21101, 5564, 8399, 4611]
     gaza_ratios = [cases/48912 for cases in gaza_cases]          # figures from Jan 20, 2021
-    for i in range(len(gaza_governorates)):
-        df_gaza.loc[i, 'Governorate '] = gaza_governorates[i]
-        df_gaza.loc[i, 'Cases today '] = float(df_ps[df_ps['Governorate ']=="Gaza strip "]['Cases today '].values)*gaza_ratios[i]
+    gaza_today = df_ps[df_ps['Governorate '].str.contains("Gaza")].iloc[0,2]
+    df_gaza.iloc[:,2] = [gaza_today*i for i in gaza_ratios]
     df_ps = df_ps.append(df_gaza)
     df_ps = df_ps[~df_ps['Governorate '].isin(["Gaza strip "])]
 
