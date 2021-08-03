@@ -152,7 +152,7 @@ def forecast():
         gaza_today = df_ps[df_ps['Governorate'].str.contains("Gaza")].iloc[0,2]
         df_gaza.iloc[:,2] = [gaza_today*i for i in gaza_ratios]
         df_ps = df_ps.append(df_gaza)
-        df_ps = df_ps[~df_ps['Governorate'].isin(["Gaza strip "])]
+        df_ps = df_ps[~df_ps['Governorate'].isin(["Gaza strip"])]
         df_ps['proportion_new_cases'] = df_ps.iloc[:,2] / total_new_cases
     else:    
         gaza_today = df_ps[df_ps['Governorate'].str.contains("Gaza")].iloc[0,1]
