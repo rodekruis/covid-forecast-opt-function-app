@@ -10,8 +10,8 @@ from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
 from selenium.common.exceptions import \
     NoSuchElementException, TimeoutException, InvalidArgumentException, WebDriverException
-# from googletrans import Translator, constants
-from google_trans_new import google_translator
+from googletrans import Translator#, constants
+# from google_trans_new import google_translator
 from matplotlib import pyplot as plt
 import schedule
 import time
@@ -77,16 +77,16 @@ def forecast():
         df_ps = pd.DataFrame(tab_data)
 
         # init the Google API translator
-        # translator = Translator()
-        translator = google_translator() 
+        translator = Translator()
+        # translator = google_translator() 
 
         #translate the first row with titles
         for i in range(0, df_ps.shape[1]):
-            translation =  translator.translate(df_ps[i][0], lang_tgt="en")
+            translation =  translator.translate(df_ps[i][0], dest="en")
             df_ps[i][0] = translation
         #now translate the 0th column (with governorates)
         for i in range(1, df_ps.shape[0]):
-            translation =  translator.translate(df_ps[0][i], lang_tgt="en")
+            translation =  translator.translate(df_ps[0][i], dest="en")
             df_ps[0][i] = translation
         
         #Header 
