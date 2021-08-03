@@ -83,11 +83,11 @@ def forecast():
         #translate the first row with titles
         for i in range(0, df_ps.shape[1]):
             translation =  translator.translate(df_ps[i][0], dest="en")
-            df_ps[i][0] = translation
+            df_ps[i][0] = translation.text
         #now translate the 0th column (with governorates)
         for i in range(1, df_ps.shape[0]):
             translation =  translator.translate(df_ps[0][i], dest="en")
-            df_ps[0][i] = translation
+            df_ps[0][i] = translation.text
         
         #Header 
         df_ps = df_ps.rename(columns=df_ps.iloc[0]).drop(df_ps.index[0])
