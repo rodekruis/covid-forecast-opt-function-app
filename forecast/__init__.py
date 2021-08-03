@@ -10,8 +10,8 @@ from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
 from selenium.common.exceptions import \
     NoSuchElementException, TimeoutException, InvalidArgumentException, WebDriverException
-# from googletrans import Translator, constants
-from google_trans_new import google_translator
+from googletrans import Translator#, constants
+# from google_trans_new import google_translator
 from matplotlib import pyplot as plt
 import schedule
 import time
@@ -77,19 +77,20 @@ def forecast():
         df_ps = pd.DataFrame(tab_data)
 
         # init the Google API translator
-        # translator = Translator()
-        translator = google_translator() 
+        translator = Translator()
+        # translator = google_translator() 
 
         #translate the first row with titles
         for i in range(0, df_ps.shape[1]):
-            translation =  translator.translate(df_ps[i][0], lang_tgt="en")
-            df_ps[i][0] = translation
+            translation =  translator.translate(df_ps[i][0], dest="en")
+            df_ps[i][0] = translation.text
         #now translate the 0th column (with governorates)
         for i in range(1, df_ps.shape[0]):
-            translation =  translator.translate(df_ps[0][i], lang_tgt="en")
-            df_ps[0][i] = translation
+            translation =  translator.translate(df_ps[0][i], dest="en")
+            df_ps[0][i] = translation.text
         
         #Header 
+        df_ps.loc[0] = df_ps.loc[0].str.strip()
         df_ps = df_ps.rename(columns=df_ps.iloc[0]).drop(df_ps.index[0])
         
         # Returns a datetime object containing the local date and time
@@ -136,23 +137,34 @@ def forecast():
     credentials = service_account.Credentials.from_service_account_info(service_key, scopes=scopes)
     service = discovery.build('sheets', 'v4', credentials=credentials, cache_discovery=False)
 
-    
+    # calculate proportion of new cases (in the last 7 days) per district
     df_ps.iloc[:,2] = df_ps.iloc[:,2].astype(str).apply(lambda x: x.replace(',','')).astype(int) # 3th column contains new cases in the last 7 days, per district
-    
+    df_ps.iloc[:,1] = df_ps.iloc[:,1].astype(str).apply(lambda x: x.replace(',','')).astype(int) # 2th column contains all time total cases, per district
 
     # Gaza breakdown
+    total_new_cases = df_ps.iloc[:,2].sum()    
     df_gaza = pd.DataFrame(columns=df_ps.columns)
     df_gaza.iloc[:,0] = ['Jabalia', 'Gaza City', 'Der Albalah', 'Khan Younis', 'Rafah']
     gaza_cases = [9237, 21101, 5564, 8399, 4611]
     gaza_ratios = [cases/48912 for cases in gaza_cases]          # figures from Jan 20, 2021
-    gaza_today = df_ps[df_ps['Governorate '].str.contains("Gaza")].iloc[0,2]
-    df_gaza.iloc[:,2] = [gaza_today*i for i in gaza_ratios]
-    df_ps = df_ps.append(df_gaza)
-    df_ps = df_ps[~df_ps['Governorate '].isin(["Gaza strip "])]
+
+    if total_new_cases != 0: 
+        gaza_today = df_ps[df_ps['Governorate'].str.contains("Gaza")].iloc[0,2]
+        df_gaza.iloc[:,2] = [gaza_today*i for i in gaza_ratios]
+        df_ps = df_ps.append(df_gaza)
+        df_ps = df_ps[~df_ps['Governorate'].isin(["Gaza strip"])]
+        df_ps['proportion_new_cases'] = df_ps.iloc[:,2] / total_new_cases
+    else:    
+        gaza_today = df_ps[df_ps['Governorate'].str.contains("Gaza")].iloc[0,1]
+        df_gaza.iloc[:,1] = [gaza_today*i for i in gaza_ratios]  
+        df_ps = df_ps.append(df_gaza)
+        df_ps = df_ps[~df_ps['Governorate'].isin(["Gaza strip"])]
+
+        total_new_cases = df_ps.iloc[:,1].sum()
+        df_ps['proportion_new_cases'] = df_ps.iloc[:,1] / total_new_cases
 
     # CALCULATE RATIO AND PROJECT FOR EACH GOVERNORATE 
-    total_new_cases = df_ps.iloc[:,2].sum()
-    df_ps['proportion_new_cases'] = df_ps.iloc[:,2] / total_new_cases
+
 
     df_ps_week = pd.DataFrame()
     for i in range(len(df_new_cases)):
@@ -186,7 +198,7 @@ def forecast():
     blob_fig1.upload_blob(io_fig1.read(), blob_type="BlockBlob", overwrite=True)
 
     # plot new cases forecast per governorate
-    for i, m in df_ps_week.groupby('Governorate '):
+    for i, m in df_ps_week.groupby('Governorate'):
         fig, ax = plt.subplots(figsize=(15, 7), dpi=300)
         ax.plot(m['date'], m['new_cases_mean'], label=i)
         ax.fill_between(m['date'],
@@ -206,7 +218,7 @@ def forecast():
     df_ps_week['date'] = df_ps_week['date'].dt.strftime('%Y%m%d')
 
     # EXPORT FORECAST OUTPUTS AS CSV
-    df_to_export = df_ps_week[['Governorate ', 'date', 'new_cases_min', 'new_cases_mean', 'new_cases_max']].reset_index(drop=True)
+    df_to_export = df_ps_week[['Governorate', 'date', 'new_cases_min', 'new_cases_mean', 'new_cases_max']].reset_index(drop=True)
     df_out1 = df_to_export.to_csv()
     blob_df = blob_service_client.get_blob_client('covid-opt-fc-outputs', str(today) + '_covid_forecast.csv')
     blob_df.upload_blob(df_out1, blob_type="BlockBlob", overwrite=True)
