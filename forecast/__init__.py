@@ -207,6 +207,8 @@ def forecast():
         ax.axvline(today, linestyle='dashed', label="Today", color="k")
         ax.set(title="COVID cases forecast "+ str(i), xlabel="Date", ylabel="New cases")
         ax.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+        ax.set_ylim([round(m['new_cases_min'].min() - m['new_cases_min'].min()*0.2),
+                    round(m['new_cases_max'].max() + m['new_cases_max'].max()*0.2)])
         ax.grid()
         io_fig = io.BytesIO()
         fig.savefig(io_fig, format='png')
