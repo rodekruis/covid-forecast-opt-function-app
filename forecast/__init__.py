@@ -67,6 +67,8 @@ def forecast():
         file_ps = list_properties.loc[list_properties['date'].idxmax()]["file"]
         blob_table = blob_service_client.get_blob_client('covid-opt-fc-data', file_ps)
         table = io.StringIO(str(blob_table.download_blob().readall(), "utf-8"))
+        df_ps_latest = False
+        timestampStr = table.split('_')[-1].split('.')[0]
         df_ps = pd.read_csv(table)
     else:
         #tables[4] has the necessary data
@@ -95,6 +97,7 @@ def forecast():
         
         # Returns a datetime object containing the local date and time
         # dateTimeObj = datetime.now()
+        df_ps_latest = True
         dateTimeObj = today
         timestampStr = dateTimeObj.strftime("%d-%b-%Y")
         name_df = 'COVID_ps_'+ timestampStr + '.csv'
@@ -143,25 +146,27 @@ def forecast():
 
     # Gaza breakdown
     total_new_cases = df_ps.iloc[:,2].sum()    
-    df_gaza = pd.DataFrame(columns=df_ps.columns)
-    df_gaza.iloc[:,0] = ['Jabalia', 'Gaza City', 'Der Albalah', 'Khan Younis', 'Rafah']
-    gaza_cases = [9237, 21101, 5564, 8399, 4611]
-    gaza_ratios = [cases/48912 for cases in gaza_cases]          # figures from Jan 20, 2021
+    # df_gaza = pd.DataFrame(columns=df_ps.columns)
+    # df_gaza.iloc[:,0] = ['Jabalia', 'Gaza City', 'Der Albalah', 'Khan Younis', 'Rafah']
+    # gaza_cases = [9237, 21101, 5564, 8399, 4611]
+    # gaza_ratios = [cases/48912 for cases in gaza_cases]          # figures from Jan 20, 2021
 
     if total_new_cases != 0: 
-        gaza_today = df_ps[df_ps['Governorate'].str.contains("Gaza")].iloc[0,2]
-        df_gaza.iloc[:,2] = [gaza_today*i for i in gaza_ratios]
-        df_ps = df_ps.append(df_gaza)
-        df_ps = df_ps[~df_ps['Governorate'].isin(["Gaza strip"])]
+        # gaza_today = df_ps[df_ps['Governorate'].str.contains("Gaza")].iloc[0,2]
+        # df_gaza.iloc[:,2] = [gaza_today*i for i in gaza_ratios]
+        # df_ps = df_ps.append(df_gaza)
+        # df_ps = df_ps[~df_ps['Governorate'].isin(["Gaza strip"])]
         df_ps['proportion_new_cases'] = df_ps.iloc[:,2] / total_new_cases
+        table_updated = True
     else:    
-        gaza_today = df_ps[df_ps['Governorate'].str.contains("Gaza")].iloc[0,1]
-        df_gaza.iloc[:,1] = [gaza_today*i for i in gaza_ratios]  
-        df_ps = df_ps.append(df_gaza)
-        df_ps = df_ps[~df_ps['Governorate'].isin(["Gaza strip"])]
+        # gaza_today = df_ps[df_ps['Governorate'].str.contains("Gaza")].iloc[0,1]
+        # df_gaza.iloc[:,1] = [gaza_today*i for i in gaza_ratios]  
+        # df_ps = df_ps.append(df_gaza)
+        # df_ps = df_ps[~df_ps['Governorate'].isin(["Gaza strip"])]
 
         total_new_cases = df_ps.iloc[:,1].sum()
         df_ps['proportion_new_cases'] = df_ps.iloc[:,1] / total_new_cases
+        table_updated = False
 
     # CALCULATE RATIO AND PROJECT FOR EACH GOVERNORATE 
 
@@ -180,7 +185,7 @@ def forecast():
         df_ps_week = df_ps_week.append(df_ps_date)
 
     # plot ICU forecast
-    fig1, ax1 = plt.subplots(figsize=(20, 10), dpi=300)
+    fig1, ax1 = plt.subplots(figsize=(15, 7), dpi=300)
     ax1.plot(df_icu_inci['date'], df_icu_inci['y_median'], color="crimson", label='ICU incidence')
     ax1.fill_between(df_icu_inci['date'],
             df_icu_inci['y_25'],
@@ -189,6 +194,12 @@ def forecast():
     ax1.set(title="ICU incidence forecast", xlabel="Date", ylabel="New cases")
     ax1.set_ylim(bottom=0)
     ax1.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+    if df_ps_latest and table_updated:
+        plt.gcf().text(0.02, 0.02, 'Data from corona.ps used here is up-to-date on {0}.'.format(timestampStr))
+    elif df_ps_latest and not table_updated:
+        plt.gcf().text(0.02, 0.02, 'Data from corona.ps used here is not yet updated on {0}. Forecast was made with Total cases instead of Today new cases.'.format(timestampStr))
+    elif not df_ps_latest:
+        plt.gcf().text(0.02, 0.02, 'Site corona.ps is temporarily inaccessible. Forecast was made with data from corona.ps on {0}.'.format(timestampStr))        
     ax1.grid()
     io_fig1 = io.BytesIO()
     fig1.savefig(io_fig1, format='png')
@@ -209,6 +220,12 @@ def forecast():
         ax.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
         ax.set_ylim([round(m['new_cases_min'].min() - m['new_cases_min'].min()*0.2),
                     round(m['new_cases_max'].max() + m['new_cases_max'].max()*0.2)])
+        if df_ps_latest and table_updated:
+            plt.gcf().text(0.02, 0.02, 'Data from corona.ps used here is up-to-date on {0}.'.format(timestampStr))
+        elif df_ps_latest and not table_updated:
+            plt.gcf().text(0.02, 0.02, 'Data from corona.ps used here is not yet updated on {0}. Forecast was made with Total cases instead of Today new cases.'.format(timestampStr))
+        elif not df_ps_latest:
+            plt.gcf().text(0.02, 0.02, 'Site corona.ps is temporarily inaccessible. Forecast was made with data from corona.ps on {0}.'.format(timestampStr))        
         ax.grid()
         io_fig = io.BytesIO()
         fig.savefig(io_fig, format='png')
