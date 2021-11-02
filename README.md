@@ -7,7 +7,6 @@ COVID-19 emergency support to Palestine Red Crescent. An automated function in P
 **Input:**
 
 - Latest COVID-19 forecast from [MRC Centre for Global Infectious Disease Analysis, Imperial College London](https://mrc-ide.github.io/global-lmic-reports/)
-
 - Latest COVID-19 (daily) report from [corona.ps](https://corona.ps/). Gaza strip is also broken down in to 5 governorates based on data from the NS.
 
 **Output:**

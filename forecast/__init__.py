@@ -186,20 +186,23 @@ def forecast():
 
     # plot ICU forecast
     fig1, ax1 = plt.subplots(figsize=(15, 7), dpi=300)
-    ax1.plot(df_icu_inci['date'], df_icu_inci['y_median'], color="crimson", label='ICU incidence')
-    ax1.fill_between(df_icu_inci['date'],
-            df_icu_inci['y_25'],
-            df_icu_inci['y_75'], color="crimson", alpha=0.35)
     ax1.axvline(today, linestyle='dashed', label="Today", color="k")
-    ax1.set(title="ICU incidence forecast", xlabel="Date", ylabel="New cases")
+    ax1.plot(df_icu_inci['date'], df_icu_inci['y_median'], color="crimson", label='Median ICU incidence')
+    ax1.fill_between(df_icu_inci['date'],
+                    df_icu_inci['y_25'],
+                    df_icu_inci['y_75'], 
+                    label='Confidence range', color="crimson", alpha=0.35)
+    ax1.set_title("NEW ICU INCIDENCE FORECAST", fontweight='bold', fontsize=16)
+    ax1.set(xlabel="Date", ylabel="New cases")
     ax1.set_ylim(bottom=0)
-    ax1.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+    ax1.legend(loc='upper right')#bbox_to_anchor=(1.0, 1.0)
+    plt.gcf().text(0.02, 0.05, 'Imperial College London data used here is up-to-date on {0}.'.format(timestampStr))
     if df_ps_latest and table_updated:
-        plt.gcf().text(0.02, 0.02, 'Data from corona.ps used here is up-to-date on {0}.'.format(timestampStr))
+        plt.gcf().text(0.02, 0.02, 'Corona.ps data used here is up-to-date on {0}.'.format(timestampStr))
     elif df_ps_latest and not table_updated:
-        plt.gcf().text(0.02, 0.02, 'Data from corona.ps used here is not yet updated on {0}. Forecast was made with Total cases instead of Today new cases.'.format(timestampStr))
+        plt.gcf().text(0.02, 0.02, 'Corona.ps data used here is not yet updated on {0}. Forecast is made with Total cases instead of Today new cases.'.format(timestampStr))
     elif not df_ps_latest:
-        plt.gcf().text(0.02, 0.02, 'Site corona.ps is temporarily inaccessible. Forecast was made with data from corona.ps on {0}.'.format(timestampStr))        
+        plt.gcf().text(0.02, 0.02, 'Site corona.ps is temporarily inaccessible. Forecast is made with data from corona.ps on {0}.'.format(timestampStr))        
     ax1.grid()
     io_fig1 = io.BytesIO()
     fig1.savefig(io_fig1, format='png')
@@ -211,21 +214,24 @@ def forecast():
     # plot new cases forecast per governorate
     for i, m in df_ps_week.groupby('Governorate'):
         fig, ax = plt.subplots(figsize=(15, 7), dpi=300)
-        ax.plot(m['date'], m['new_cases_mean'], label=i)
-        ax.fill_between(m['date'],
-                m['new_cases_min'],
-                m['new_cases_max'], alpha=0.35)
         ax.axvline(today, linestyle='dashed', label="Today", color="k")
-        ax.set(title="COVID cases forecast "+ str(i), xlabel="Date", ylabel="New cases")
-        ax.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+        ax.plot(m['date'], m['new_cases_mean'], label='Median cases')
+        ax.fill_between(m['date'],
+                        m['new_cases_min'],
+                        m['new_cases_max'], 
+                        label='Confidence range', alpha=0.35)
+        ax.set_title("NEW COVID-19 CASES FORECAST \n {0}".format(str(i)), fontweight='bold', fontsize=16)
+        ax.set(xlabel="Date", ylabel="New cases")
+        ax.legend(loc='upper right')#bbox_to_anchor=(1.0, 1.0)
         ax.set_ylim([round(m['new_cases_min'].min() - m['new_cases_min'].min()*0.2),
                     round(m['new_cases_max'].max() + m['new_cases_max'].max()*0.2)])
+        plt.gcf().text(0.02, 0.05, 'Imperial College London data used here is up-to-date on {0}.'.format(timestampStr))
         if df_ps_latest and table_updated:
-            plt.gcf().text(0.02, 0.02, 'Data from corona.ps used here is up-to-date on {0}.'.format(timestampStr))
+            plt.gcf().text(0.02, 0.02, 'Corona.ps data used here is up-to-date on {0}.'.format(timestampStr))
         elif df_ps_latest and not table_updated:
-            plt.gcf().text(0.02, 0.02, 'Data from corona.ps used here is not yet updated on {0}. Forecast was made with Total cases instead of Today new cases.'.format(timestampStr))
+            plt.gcf().text(0.02, 0.02, 'Corona.ps data used here is not yet updated on {0}. Forecast is made with Total cases instead of Today new cases.'.format(timestampStr))
         elif not df_ps_latest:
-            plt.gcf().text(0.02, 0.02, 'Site corona.ps is temporarily inaccessible. Forecast was made with data from corona.ps on {0}.'.format(timestampStr))        
+            plt.gcf().text(0.02, 0.02, 'Site corona.ps is temporarily inaccessible. Forecast is made with data from corona.ps on {0}.'.format(timestampStr))        
         ax.grid()
         io_fig = io.BytesIO()
         fig.savefig(io_fig, format='png')
